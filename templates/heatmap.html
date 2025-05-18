@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Match-Up Heatmap</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    <style>
+        .header-bg {
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <header class="header-bg py-4 mb-4">
+        <div class="container">
+            <h1 class="text-center">Cricket Player Match-Up Heatmap</h1>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card shadow">
+                    <div class="card-header bg-info text-white">
+                        <h2 class="h4 mb-0">Wicket Probability Heatmap</h2>
+                    </div>
+                    <div class="card-body text-center">
+                        <p class="mb-4">This heatmap shows wicket probabilities for top bowlers vs. top batters</p>
+                        {% if heatmap_img %}
+                            <img src="{{ heatmap_img }}" class="img-fluid" alt="Match-up Heatmap">
+                        {% else %}
+                            <div class="alert alert-warning">
+                                No heatmap data available. There may not be enough match data.
+                            </div>
+                        {% endif %}
+                        <p class="mt-4 text-muted">Darker blue indicates higher wicket probability</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <a href="/" class="btn btn-secondary mb-4">Back to Dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p>&copy; 2025 Cricket Analytics Dashboard</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
