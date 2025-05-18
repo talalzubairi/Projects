@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Player Match-Up Prediction Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    <style>
+        .prediction-card {
+            transition: all 0.3s;
+        }
+        .prediction-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .header-bg {
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            color: white;
+        }
+        #errorAlert {
+            display: none;
+            margin-bottom: 20px;
+        }
+        .loader {
+            display: none;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 2s linear infinite;
+            margin-left: 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <header class="header-bg py-4 mb-4">
+        <div class="container">
+            <h1 class="text-center">Cricket Player Match-Up Prediction Dashboard</h1>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Error alert -->
+        <div id="errorAlert" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Error!</strong> <span id="errorMessage"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h2 class="h4 mb-0">Player Match-Up Analysis</h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="matchupForm" class="row g-3">
+                            <div class="col-md-5">
+                                <label for="bowler" class="form-label">Bowler</label>
+                                <select class="form-select" id="bowler" name="bowler" required>
+                                    <option value="">Select Bowler</option>
+                                    {% for bowler in bowlers %}
+                                    <option value="{{ bowler }}">{{ bowler }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label for="batter" class="form-label">Batter</label>
+                                <select class="form-select" id="batter" name="batter" required>
+                                    <option value="">Select Batter</option>
+                                    {% for batter in batters %}
+                                    <option value="{{ batter }}">{{ batter }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100" id="predictBtn">Predict</button>
+                                <div class="loader" id="predictLoader"></div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4" id="predictionResults" style="display: none;">
+            <div class="col-md-12">
+                <div class="card shadow">
+                    <div class="card-header bg-success text-white">
+                        <h2 class="h4 mb-0">Match-Up Prediction Results</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card prediction-card text-center mb-3">
+                                    <div class="card-header bg-danger text-white">
+                                        Wicket Probability
+                                    </div>
+                                    <div class="card-body">
+                                        <h3 id="wicketProb" class="display-4">-</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card prediction-card text-center mb-3">
+                                    <div class="card-header bg-primary text-white">
+                                        Boundary Probability
+                                    </div>
+                                    <div class="card-body">
+                                        <h3 id="boundaryProb" class="display-4">-</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card prediction-card text-center mb-3">
+                                    <div class="card-header bg-secondary text-white">
+                                        Dot Ball Probability
+                                    </div>
+                                    <div class="card-body">
+                                        <h3 id="dotBallProb" class="display-4">-</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4" id="headToHeadSection" style="display: none;">
+                            <div class="col-12">
+                                <h4>Head-to-Head Statistics</h4>
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Total Balls</th>
+                                            <th>Wickets</th>
+                                            <th>Runs</th>
+                                            <th>Boundaries</th>
+                                            <th>Dot Balls</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td id="totalBalls">-</td>
+                                            <td id="wickets">-</td>
+                                            <td id="runs">-</td>
+                                            <td id="boundaries">-</td>
+                                            <td id="dotBalls">-</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card shadow h-100">
+                    <div class="card-header bg-info text-white">
+                        <h2 class="h4 mb-0">Match-Up Heatmap</h2>
+                    </div>
+                    <div class="card-body">
+                        <p>View the head-to-head match-up statistics for top players in a visual heatmap.</p>
+                        <a href="/heatmap" class="btn btn-info text-white">View Heatmap</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card shadow h-100">
+                    <div class="card-header bg-warning text-dark">
+                        <h2 class="h4 mb-0">Scenario Simulation</h2>
+                    </div>
+                    <div class="card-body">
+                        <p>Simulate a match scenario with specific bowlers and batters to predict outcomes.</p>
+                        <a href="/simulate" class="btn btn-warning text-dark">Run Simulation</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p>&copy; 2025 Cricket Analytics Dashboard</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Debug the current state of the dropdown options
+            console.log("DOM Ready - Checking dropdowns");
+
+            // Check bowler dropdown
+            const bowlerOptions = $('#bowler option').length;
+            console.log(`Bowler dropdown has ${bowlerOptions} options (including placeholder)`);
+            if (bowlerOptions <= 1) {
+                console.warn("WARNING: Bowler dropdown has no valid options");
+                showError("No bowlers found in the dataset. Please check your data source.");
+            } else {
+                // Show the first few options for debugging
+                const sampleBowlers = [];
+                $('#bowler option').slice(1, 6).each(function() {
+                    sampleBowlers.push($(this).text());
+                });
+                console.log("Sample bowlers:", sampleBowlers);
+            }
+
+            // Check batter dropdown
+            const batterOptions = $('#batter option').length;
+            console.log(`Batter dropdown has ${batterOptions} options (including placeholder)`);
+            if (batterOptions <= 1) {
+                console.warn("WARNING: Batter dropdown has no valid options");
+                showError("No batters found in the dataset. Please check your data source.");
+            } else {
+                // Show the first few options for debugging
+                const sampleBatters = [];
+                $('#batter option').slice(1, 6).each(function() {
+                    sampleBatters.push($(this).text());
+                });
+                console.log("Sample batters:", sampleBatters);
+            }
+
+            // Function to show error message
+            function showError(message) {
+                $('#errorMessage').text(message);
+                $('#errorAlert').show();
+            }
+
+            $('#matchupForm').on('submit', function(e) {
+                e.preventDefault();
+
+                // Show loading indicator
+                $('#predictBtn').prop('disabled', true);
+                $('#predictLoader').show();
+
+                // Hide any previous error
+                $('#errorAlert').hide();
+
+                $.ajax({
+                    url: '/predict',
+                    method: 'POST',
+                    data: $(this).serialize(),
+                    success: function(response) {
+                        // Hide loading indicator
+                        $('#predictBtn').prop('disabled', false);
+                        $('#predictLoader').hide();
+
+                        // Display prediction results
+                        $('#wicketProb').text(response.wicket_probability + '%');
+                        $('#boundaryProb').text(response.boundary_probability + '%');
+                        $('#dotBallProb').text(response.dot_ball_probability + '%');
+
+                        // Show the results section
+                        $('#predictionResults').show();
+
+                        // Display head-to-head stats if available
+                        if (response.head_to_head && Object.keys(response.head_to_head).length > 0) {
+                            $('#totalBalls').text(response.head_to_head.total_balls);
+                            $('#wickets').text(response.head_to_head.wickets);
+                            $('#runs').text(response.head_to_head.runs);
+                            $('#boundaries').text(response.head_to_head.boundaries);
+                            $('#dotBalls').text(response.head_to_head.dot_balls);
+                            $('#headToHeadSection').show();
+                        } else {
+                            $('#headToHeadSection').hide();
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        // Hide loading indicator
+                        $('#predictBtn').prop('disabled', false);
+                        $('#predictLoader').hide();
+
+                        // Try to parse the error message from the response
+                        let errorMessage = 'An error occurred while fetching prediction data.';
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            if (response.error) {
+                                errorMessage = response.error;
+                            }
+                        } catch (e) {
+                            // If we can't parse the error, use the default message
+                        }
+
+                        // Show error message
+                        showError(errorMessage);
+
+                        // Log the error details
+                        console.error("AJAX error:", status, error);
+                        console.error("Response:", xhr.responseText);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
