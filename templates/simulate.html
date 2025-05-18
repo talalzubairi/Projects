@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Scenario Simulation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/css/select2.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2-bootstrap-5-theme/1.3.0/select2-bootstrap-5-theme.min.css">
+    <style>
+        .header-bg {
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            color: white;
+        }
+        .dropdown-alert {
+            display: none;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header class="header-bg py-4 mb-4">
+        <div class="container">
+            <h1 class="text-center">Cricket Scenario Simulation</h1>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Alert for when dropdowns are empty -->
+        <div id="emptyDropdownAlert" class="alert alert-warning dropdown-alert" role="alert">
+            <strong>Data Loading...</strong> Please wait a moment while player data is being loaded. If this message persists, try returning to the dashboard and coming back.
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card shadow">
+                    <div class="card-header bg-warning text-dark">
+                        <h2 class="h4 mb-0">Configure Simulation</h2>
+                    </div>
+                    <div class="card-body">
+                        <form action="/simulate" method="post" id="simulationForm">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="batting_team" class="form-label">Batting Team</label>
+                                    <input type="text" class="form-control" id="batting_team" name="batting_team" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="bowling_team" class="form-label">Bowling Team</label>
+                                    <input type="text" class="form-control" id="bowling_team" name="bowling_team" required>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="venue" class="form-label">Venue</label>
+                                    <select class="form-select" id="venue" name="venue" required>
+                                        <option value="">Select Venue</option>
+                                        {% for venue in venues %}
+                                        <option value="{{ venue }}">{{ venue }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="overs" class="form-label">Number of Overs</label>
+                                    <input type="number" class="form-control" id="overs" name="overs" min="1" max="20" value="5" required>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="batters" class="form-label">Select Batters</label>
+                                    <select class="form-select batters-select" id="batters" name="batters" multiple required>
+                                        {% for batter in batters %}
+                                        <option value="{{ batter }}">{{ batter }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <small class="text-muted">Select at least 4 batters</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="bowlers" class="form-label">Select Bowlers</label>
+                                    <select class="form-select bowlers-select" id="bowlers" name="bowlers" multiple required>
+                                        {% for bowler in bowlers %}
+                                        <option value="{{ bowler }}">{{ bowler }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <small class="text-muted">Select at least 2 bowlers</small>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <a href="/" class="btn btn-secondary me-md-2">Back to Dashboard</a>
+                                <button type="submit" class="btn btn-warning" id="simulateBtn">Run Simulation</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p>&copy; 2025 Cricket Analytics Dashboard</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Check if dropdowns have options
+            const batterOptions = $('#batters option').length;
+            const bowlerOptions = $('#bowlers option').length;
+            const venueOptions = $('#venue option').length;
+
+            // Log for debugging
+            console.log("Batters in dropdown:", batterOptions);
+            console.log("Bowlers in dropdown:", bowlerOptions);
+            console.log("Venues in dropdown:", venueOptions);
+
+            // If any dropdown is empty, show the alert and disable the form
+            if (batterOptions === 0 || bowlerOptions === 0 || venueOptions <= 1) {
+                $('#emptyDropdownAlert').show();
+                $('#simulateBtn').prop('disabled', true);
+
+                // Try to reload the page after 5 seconds to get fresh data
+                setTimeout(function() {
+                    location.reload();
+                }, 5000);
+            } else {
+                // Initialize Select2 when we have data
+                $('.batters-select').select2({
+                    theme: 'bootstrap-5',
+                    placeholder: 'Select batters',
+                    maximumSelectionLength: 11
+                });
+
+                $('.bowlers-select').select2({
+                    theme: 'bootstrap-5',
+                    placeholder: 'Select bowlers',
+                    maximumSelectionLength: 5
+                });
+            }
+
+            // Form validation
+            $('#simulationForm').on('submit', function(e) {
+                const selectedBatters = $('#batters').val();
+                const selectedBowlers = $('#bowlers').val();
+                const selectedVenue = $('#venue').val();
+
+                if (!selectedBatters || selectedBatters.length < 4) {
+                    e.preventDefault();
+                    alert('Please select at least 4 batters');
+                    return false;
+                }
+
+                if (!selectedBowlers || selectedBowlers.length < 2) {
+                    e.preventDefault();
+                    alert('Please select at least 2 bowlers');
+                    return false;
+                }
+
+                if (!selectedVenue) {
+                    e.preventDefault();
+                    alert('Please select a venue');
+                    return false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
